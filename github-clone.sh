@@ -115,6 +115,7 @@ readonly -f usage_message || return 1
 
 main () {
   # INITIAL VALUES
+  local authorization_header="" # used to pass the github token in the header when using curl
   local command=${1}            # used to identified the command. values are either 'public' or 'authenticated'
   local github_affiliation=""   # filter repos for affiliation. e.g. clone only owned repos. used by command 'authenticated'
   local github_api_url=""       # different api url based on the command used
@@ -236,14 +237,14 @@ main () {
   
   if [ "${command}" == "authenticated" ]; then
     # api url for all repositories accessable by the github token
-    github_api_url="https://api.github.com/user/repos?per_page=100&access_token=${github_token}"
+    github_api_url="https://api.github.com/user/repos?per_page=100"
     if [ "${github_affiliation}" ]; then
       github_api_url+="&affiliation=${github_affiliation}"
     fi
   elif [ "${command}" == "public" ]; then
     # api url for public repositories
     # the github token can help with the github api request limit
-    github_api_url="https://api.github.com/${github_type}/${github_name}/repos?per_page=100&access_token=${github_token}"
+    github_api_url="https://api.github.com/${github_type}/${github_name}/repos?per_page=100"
   else
     print_error "unexpected error generating the api url"
     return 1
@@ -258,10 +259,17 @@ main () {
   # while new repos are found... do
   while true
   do 
+    # set github authorization header for curl if gh_token is set
+    if [ "${gh_token}" ]; then
+      # passing the access_token in the url is deprecated and will be removed May 5, 2021 at 16:00 UTC
+      # https://developer.github.com/changes/2020-02-10-deprecating-auth-through-query-param/
+      authorization_header="-H \"Authorization: token ${github_token}\""
+    fi
+    
     # add new repos to the array of already identified repos
     # the repos array contains the urls to clone the repos
     # public repos are cloned by the git_url authenticated repos are cloned by the ssh_url
-    github_api_response=$(curl -sSL "${github_api_url}"\&page=${page})
+    github_api_response=$(eval "curl -sSL ${authorization_header} '${github_api_url}\&page=${page}'")
     if [ "${command}" == "public" ]; then
       mapfile -t -O "${#repos[@]}" repos < <(echo -e "${github_api_response}" | grep -e 'git_url' | cut -d \" -f 4)
     elif [ "${command}" == "authenticated" ]; then
