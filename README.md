@@ -2,7 +2,7 @@
 
 A little script to easily clone multiple repositories from github. This is especially handy if you want to set your development environment on a new system.
 
-```bash
+```Text
 github-clone.sh is designed to clone github repositories by querying the github api to gather 
 repo URLs.
 
