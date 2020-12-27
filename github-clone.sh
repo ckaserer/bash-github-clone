@@ -258,17 +258,16 @@ main () {
     # add new repos to the array of already identified repos
     # the repos array contains the urls to clone the repos
     # public repos are cloned by the git_url authenticated repos are cloned by the ssh_url
-    repo_string=$(curl -sSL ${github_api_url}\&page=${page})
+    local github_api_response=$(curl -sSL "${github_api_url}"\&page=${page})
     if [ "${command}" == "public" ]; then
-      repo_string=$(echo "${repo_string}" | grep -e 'git_url' | cut -d \" -f 4)
+      readarray -t new_repos <<< $(echo -e "${github_api_response}" | grep -e 'git_url' | cut -d \" -f 4)
     elif [ "${command}" == "authenticated" ]; then
-      repo_string=$(echo "${repo_string}" | grep -e 'ssh_url' | cut -d \" -f 4)
+      readarray -t new_repos <<< $(echo "${repo_string}" | grep -e 'ssh_url' | cut -d \" -f 4)
     else
-        print_error "unexpected error collecting repo urls"
-        return 1
+      print_error "unexpected error collecting repo urls"
+      return 1
     fi
-    repos+=( ${repo_string} )
-    echo ${repos[1]}
+    repos+=( ${new_repos[*]} )
     # if no new repo has been found break the loop
     # otherwise increase the repo_counter by the number of new repos found
     if [[ ${repo_counter} -eq ${#repos[@]} ]]; then
