@@ -46,7 +46,7 @@ readonly -f execute || return 1
 # print_error $TEXT
 # the function will only print TEXT to stderr
 function print_error () { 
-  >&2 echo "ERROR: "$@
+  >&2 echo "ERROR: $*"
 }
 readonly -f print_error || return 1
 
@@ -111,12 +111,11 @@ usage_message () {
         -d | --dryrun)          ... dryrun
         -h | --help)            ... help"""
 }
-readonly -f usage_message
-[ "$?" -eq "0" ] || return $?
+readonly -f usage_message || return 1
 
 main () {
   # INITIAL VALUES
-  readonly local command=${1}
+  local command=${1}
   local github_affiliation=""   # filter repos for affiliation. e.g. clone only owned repos. used by command 'authenticated'
   local github_api_url=""       # different api url based on the command used
   local github_name=""          # name of the github user or org to clone from
@@ -153,7 +152,7 @@ main () {
         ;;
       -h | --help) 
         usage_message
-        exit 0
+        return 0
         ;;
       -n | --name) 
         github_name=${2}
@@ -235,7 +234,7 @@ main () {
   if [ "${command}" == "authenticated" ]; then
     # api url for all repositories accessable by the github token
     github_api_url="https://api.github.com/user/repos?per_page=100&access_token=${github_token}"
-    if [ -n -z "${github_affiliation}" ]; then
+    if [ "${github_affiliation}" ]; then
       github_api_url+="&affiliation=${github_affiliation}"
     fi
   elif [ "${command}" == "public" ]; then
@@ -259,16 +258,17 @@ main () {
     # add new repos to the array of already identified repos
     # the repos array contains the urls to clone the repos
     # public repos are cloned by the git_url authenticated repos are cloned by the ssh_url
-    repo_string=$(curl -sSL "${github_api_url}\&page=${page}")
-    if [ ${command} == "public" ]; then
-      repo_string=$(echo "${repo_string}" | grep -e 'git_url*' | cut -d \" -f 4)
-    elif [ ${command} == "authenticated" ]; then
-      repo_string=$(echo "${repo_string}" | grep -e 'ssh_url*' | cut -d \" -f 4)
+    repo_string=$(curl -sSL ${github_api_url}\&page=${page})
+    if [ "${command}" == "public" ]; then
+      repo_string=$(echo "${repo_string}" | grep -e 'git_url' | cut -d \" -f 4)
+    elif [ "${command}" == "authenticated" ]; then
+      repo_string=$(echo "${repo_string}" | grep -e 'ssh_url' | cut -d \" -f 4)
     else
         print_error "unexpected error collecting repo urls"
         return 1
     fi
     repos+=( ${repo_string} )
+    echo ${repos[1]}
     # if no new repo has been found break the loop
     # otherwise increase the repo_counter by the number of new repos found
     if [[ ${repo_counter} -eq ${#repos[@]} ]]; then
@@ -282,8 +282,8 @@ main () {
   done
   
   # filter repositories based on --filter if --filter is set
-  if [ -n -z "${filter}" ]; then
-    repos=( $( printf '%s\n' "${repos[@]}" | grep "${filter}" ) )
+  if [ "${filter}" ]; then
+    repos=( $( printf '%s\n' "${repos[*]}" | grep "${filter}" ) )
   fi
 
   # How many repos have been found matching the specified criteria
