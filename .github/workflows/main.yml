@@ -38,19 +38,28 @@ jobs:
           chmod 600 ~/.ssh/id_rsa &&
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
       - name: Clone public repos for user (dryrun)
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           mkdir tmp
-          (cd tmp && ../github-clone.sh public --type users --name ckaserer --dryrun)
+          (cd tmp && ../github-clone.sh public --type users --name ckaserer --ghtoken ${GH_TOKEN} --dryrun)
           rm -rf tmp
       - name: Clone public repos for user
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           mkdir tmp
-          (cd tmp && ../github-clone.sh public --type users --name ckaserer)
+          (cd tmp && ../github-clone.sh public --type users --name ckaserer --ghtoken ${GH_TOKEN})
           rm -rf tmp
       - name: Clone public repos for org
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
         run: |
           mkdir tmp
-          (cd tmp && ../github-clone.sh public --type orgs --name gepardec)
+          (cd tmp && ../github-clone.sh public --type orgs --name gepardec --ghtoken ${GH_TOKEN})
           rm -rf tmp
       - name: Clone all owned repos
         shell: bash
