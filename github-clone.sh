@@ -115,18 +115,21 @@ readonly -f usage_message || return 1
 
 main () {
   # INITIAL VALUES
-  local command=${1}
+  local command=${1}            # used to identified the command. values are either 'public' or 'authenticated'
   local github_affiliation=""   # filter repos for affiliation. e.g. clone only owned repos. used by command 'authenticated'
   local github_api_url=""       # different api url based on the command used
+  local github_api_response=""  # string containing the json response from the github api
   local github_name=""          # name of the github user or org to clone from
   local github_type=""          # used to generate the api url. 'users' or 'orgs' are supported
   local github_token=""         # used to list private and org repos when using the 'all' command
-  local page=1                  # used to iterate over multiple pages in the api request
+  local opts=""                 # used to collect options passed to the script
+  local page=1                  # used to iterate over multiple pages in the api request. We start with the first page
   local repo_counter=0          # used to check if the requested page in the api response contains new repos
   local repos=()                # array of repositories to clone. Populated by querying the github api
   
   # GETOPT
-  local opts=""
+  # Parse all options except the first one
+  # The first option indicates the command and is not a valid option for getopt
   if ! opts=$(getopt -o a:df:g:hn:t: --long affiliation:,dryrun,filter:,ghtoken:,help,name:,type: -- "${@:1}"); then
     print_error "failed to fetch options via getopt" 
     return 1
@@ -258,18 +261,17 @@ main () {
     # add new repos to the array of already identified repos
     # the repos array contains the urls to clone the repos
     # public repos are cloned by the git_url authenticated repos are cloned by the ssh_url
-    local github_api_response=$(curl -sSL "${github_api_url}"\&page=${page})
+    github_api_response=$(curl -sSL "${github_api_url}"\&page=${page})
     if [ "${command}" == "public" ]; then
-      readarray -t new_repos <<< $(echo -e "${github_api_response}" | grep -e 'git_url' | cut -d \" -f 4)
+      mapfile -t -O "${#repos[@]}" repos < <(echo -e "${github_api_response}" | grep -e 'git_url' | cut -d \" -f 4)
     elif [ "${command}" == "authenticated" ]; then
-      readarray -t new_repos <<< $(echo "${repo_string}" | grep -e 'ssh_url' | cut -d \" -f 4)
+      mapfile -t -O "${#repos[@]}" repos < <(echo -e "${github_api_response}" | grep -e 'ssh_url' | cut -d \" -f 4)
     else
       print_error "unexpected error collecting repo urls"
       return 1
     fi
-    repos+=( ${new_repos[*]} )
     # if no new repo has been found break the loop
-    # otherwise increase the repo_counter by the number of new repos found
+    # otherwise increase the repo_counter to the number of total repos found
     if [[ ${repo_counter} -eq ${#repos[@]} ]]; then
       break;
     else
@@ -282,7 +284,7 @@ main () {
   
   # filter repositories based on --filter if --filter is set
   if [ "${filter}" ]; then
-    repos=( $( printf '%s\n' "${repos[*]}" | grep "${filter}" ) )
+    mapfile -t repos < <( for repo in "${repos[@]}" ; do echo "${repo}" ; done | grep "${filter}" )
   fi
 
   # How many repos have been found matching the specified criteria
