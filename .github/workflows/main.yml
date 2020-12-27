@@ -41,21 +41,36 @@ jobs:
           chmod 600 ~/.ssh/id_rsa &&
           ssh-keyscan github.com >> ~/.ssh/known_hosts 2>/dev/null
       - name: Clone public repos for user (dryrun)
-        run: ./github-clone.sh public --type users --name ckaserer --dryrun
+        run: |
+          mkdir tmp
+          (cd tmp && ../github-clone.sh public --type users --name ckaserer --dryrun)
+          rm -rf tmp
       - name: Clone public repos for user
-        run: ./github-clone.sh public --type users --name ckaserer
+        run: |
+          mkdir tmp
+          (cd tmp && ../github-clone.sh public --type users --name ckaserer)
+          rm -rf tmp
       - name: Clone public repos for org
-        run: ./github-clone.sh public --type orgs --name gepardec
+        run: |
+          mkdir tmp
+          (cd tmp && ../github-clone.sh public --type orgs --name gepardec)
+          rm -rf tmp
       - name: Clone all owned repos
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: ./github-clone.sh authenticated --ghtoken ${GH_TOKEN} --affiliation owner
+        run: |
+          mkdir tmp
+          (cd tmp && ../github-clone.sh authenticated --ghtoken ${GH_TOKEN} --affiliation owner)
+          rm -rf tmp
       - name: Clone all owned repos matching a filter
         shell: bash
         env:
           GH_TOKEN: ${{ secrets.GH_TOKEN }}
-        run: ./github-clone.sh authenticated --ghtoken ${GH_TOKEN} --affiliation owner --filter ansible
+        run: |
+          mkdir tmp
+          (cd tmp && ../github-clone.sh authenticated --ghtoken ${GH_TOKEN} --affiliation owner --filter ansible)
+          rm -rf tmp
   merge:
     name: Merge to master
     runs-on: ubuntu-latest
