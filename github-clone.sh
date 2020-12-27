@@ -259,8 +259,8 @@ main () {
   # while new repos are found... do
   while true
   do 
-    # set github authorization header for curl if gh_token is set
-    if [ "${gh_token}" ]; then
+    # set github authorization header for curl if github_token is set
+    if [ "${github_token}" ]; then
       # passing the access_token in the url is deprecated and will be removed May 5, 2021 at 16:00 UTC
       # https://developer.github.com/changes/2020-02-10-deprecating-auth-through-query-param/
       authorization_header="-H \"Authorization: token ${github_token}\""
