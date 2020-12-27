@@ -4,7 +4,7 @@
 # READ ONLY VARIABLES #
 #######################
 
-readonly PROG_NAME=`basename "$0"`
+readonly PROG_NAME=$(basename "$0")
 
 #################### 
 # GLOBAL VARIABLES #
@@ -41,16 +41,14 @@ function execute () {
 }
 # readonly definition of a function throws an error if another function 
 # with the same name is defined a second time
-readonly -f execute
-[ "$?" -eq "0" ] || return $?
+readonly -f execute || return 1
 
 # print_error $TEXT
 # the function will only print TEXT to stderr
 function print_error () { 
-  >&2 echo "ERROR: $@"
+  >&2 echo "ERROR: "$@
 }
-readonly -f print_error
-[ "$?" -eq "0" ] || return $?
+readonly -f print_error || return 1
 
 # print_info $TEXT [$FLAG_DRYRUN=false]
 # if TEXT and FLAG_DRYRUN=true are set the command will not be execuded.
@@ -64,11 +62,10 @@ function print_info () {
   local flag_dryrun=${2:-${FLAG_DRYRUN:-false}}
   
   if [[ "${flag_dryrun}" == false ]]; then
-    echo INFO: ${text}
+    echo "INFO: ${text}"
   fi
 }
-readonly -f print_info
-[ "$?" -eq "0" ] || return $?
+readonly -f print_info || return 1
 
 ##########
 # SCRIPT #
@@ -119,7 +116,7 @@ readonly -f usage_message
 
 main () {
   # INITIAL VALUES
-  local readonly command=${1}
+  readonly local command=${1}
   local github_affiliation=""   # filter repos for affiliation. e.g. clone only owned repos. used by command 'authenticated'
   local github_api_url=""       # different api url based on the command used
   local github_name=""          # name of the github user or org to clone from
@@ -130,8 +127,8 @@ main () {
   local repos=()                # array of repositories to clone. Populated by querying the github api
   
   # GETOPT
-  local opts=`getopt -o a:df:g:hn:t: --long affiliation:,dryrun,filter:,ghtoken:,help,name:,type: -- "${@:1}"`
-  if [ $? != 0 ]; then
+  local opts=""
+  if ! opts=$(getopt -o a:df:g:hn:t: --long affiliation:,dryrun,filter:,ghtoken:,help,name:,type: -- "${@:1}"); then
     print_error "failed to fetch options via getopt" 
     return 1
   fi
@@ -177,7 +174,7 @@ main () {
   # check if all required options are given
 
   # Check if the command is supported
-  if [ ${command} != "authenticated" ] && [ ${command} != "public" ]; then
+  if [ "${command}" != "authenticated" ] && [ "${command}" != "public" ]; then
      print_error "please use a valid command."
      print_error "'${command}' unknown"
      usage_message
@@ -185,7 +182,7 @@ main () {
   fi  
   
   # Check inputs for command 'public'
-  if [ ${command} == "public" ]; then 
+  if [ "${command}" == "public" ]; then 
     # are --type and --name set?
     if [ -z "${github_type}" ] || [ -z "${github_name}" ]; then
         print_error "please provide all required options to clone public repositories"
@@ -209,7 +206,7 @@ main () {
   fi
 
   # Check inputs for command 'all'
-  if [ ${command} == "authenticated" ]; then 
+  if [ "${command}" == "authenticated" ]; then 
     # is --ghtoken set?
     if [ -z "${github_token}" ]; then
       print_error "please provide all required options to clone all repositories"
@@ -235,13 +232,13 @@ main () {
   # Generating github api url
   print_info "Generating github api url..." false
   
-  if [ ${command} == "authenticated" ]; then
+  if [ "${command}" == "authenticated" ]; then
     # api url for all repositories accessable by the github token
     github_api_url="https://api.github.com/user/repos?per_page=100&access_token=${github_token}"
-    if ! [ -z "${github_affiliation}" ]; then
+    if [ -n -z "${github_affiliation}" ]; then
       github_api_url+="&affiliation=${github_affiliation}"
     fi
-  elif [ ${command} == "public" ]; then
+  elif [ "${command}" == "public" ]; then
     # api url for public repositories
     # the github token can help with the github api request limit
     github_api_url="https://api.github.com/${github_type}/${github_name}/repos?per_page=100&access_token=${github_token}"
@@ -262,7 +259,7 @@ main () {
     # add new repos to the array of already identified repos
     # the repos array contains the urls to clone the repos
     # public repos are cloned by the git_url authenticated repos are cloned by the ssh_url
-    repo_string=$(curl -sSL ${github_api_url}\&page=${page})
+    repo_string=$(curl -sSL "${github_api_url}\&page=${page}")
     if [ ${command} == "public" ]; then
       repo_string=$(echo "${repo_string}" | grep -e 'git_url*' | cut -d \" -f 4)
     elif [ ${command} == "authenticated" ]; then
@@ -285,8 +282,8 @@ main () {
   done
   
   # filter repositories based on --filter if --filter is set
-  if ! [ -z "${filter}" ]; then
-    repos=( $( printf '%s\n' "${repos[@]}" | grep ${filter} ) )
+  if [ -n -z "${filter}" ]; then
+    repos=( $( printf '%s\n' "${repos[@]}" | grep "${filter}" ) )
   fi
 
   # How many repos have been found matching the specified criteria
@@ -298,4 +295,4 @@ main () {
   done
 }
 
-main $@
+main "$@"
