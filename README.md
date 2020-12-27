@@ -1,4 +1,4 @@
-# bash-github-clone
+# bash-github-clone [![GitHub Workflow Status](https://img.shields.io/github/workflow/status/ckaserer/bash-github-clone/CI?style=flat-square)](https://github.com/ckaserer/bash-github-clone/actions?query=workflow%3ACI) ![MIT](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square) ![Maintenance](https://img.shields.io/maintenance/yes/2021?style=flat-square)
 
 A little script to easily clone multiple repositories from github. This is especially handy if you want to set your development environment on a new system.
 
