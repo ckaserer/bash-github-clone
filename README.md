@@ -41,7 +41,7 @@ Usage:
       -h | --help)          ... help
 ```
 
-----
+---
 
 ## Source
 

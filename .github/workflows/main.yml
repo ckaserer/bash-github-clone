@@ -5,6 +5,9 @@ on:
   pull_request:
   push:
     branches:
+      - '*'
+    tags-ignore:
+      - '*'
   schedule:
     - cron: "30 8 * * 3"
 
