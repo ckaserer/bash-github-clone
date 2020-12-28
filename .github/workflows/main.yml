@@ -2,7 +2,6 @@
 name: CI
 
 on:
-  pull_request:
   push:
     branches:
       - '*'
@@ -82,7 +81,7 @@ jobs:
           (cd tmp && ../github-clone.sh authenticated --ghtoken ${GH_TOKEN} --affiliation owner --filter ansible)
           rm -rf tmp
   merge:
-    name: Merge to master
+    name: Merge to main
     runs-on: ubuntu-latest
     needs: 
       - linter
@@ -93,5 +92,5 @@ jobs:
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v3
         with:
-          branch: master
+          branch: main
 ...
